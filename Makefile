@@ -11,10 +11,12 @@ INC_DIR		= ./incs
 INC			= ${INC_DIR} ./crow
 INCLUDES	= ${INC:%=-I %}
 
+LDLIBS		= -pthread -lmysqlcppconn 
+
 DEPS		= ${OBJS:%.o=%.d}
 
 CXX			= g++
-CXXFLAGS	= -std=c++17
+CXXFLAGS	= -std=c++17 -Wall -Wextra -O2
 
 RM			= rm -rf
 
@@ -22,7 +24,7 @@ RM			= rm -rf
 all: ${NAME}
 
 ${NAME}: ${OBJS}
-	${CXX} ${CXXFLAGS} ${INCLUDES} ${OBJS} -o ${NAME}
+	${CXX} ${CXXFLAGS} ${INCLUDES} ${OBJS} ${LDLIBS} -o ${NAME}
 
 ${OBJS_PATH}/%.o : ${SRCS_PATH}/%.cpp | ${OBJS_PATH}
 	${CXX} ${CXXFLAGS} ${INCLUDES} -MMD -MP -c $< -o $@
