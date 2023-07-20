@@ -1,7 +1,7 @@
 NAME		= server
 
 SRCS_PATH	= ./srcs
-SRCS_FILES	= main.cpp
+SRCS_FILES	= main.cpp HashPasswordToken.cpp ApiRequests.cpp
 
 OBJS_PATH	= ./objs
 OBJS_FILES	= ${SRCS_FILES:.cpp=.o}
@@ -11,7 +11,7 @@ INC_DIR		= ./incs
 INC			= ${INC_DIR} ./crow
 INCLUDES	= ${INC:%=-I %}
 
-LDLIBS		= -pthread -lmysqlcppconn 
+LDLIBS		= -pthread -lmysqlcppconn -lcryptopp 
 
 DEPS		= ${OBJS:%.o=%.d}
 
