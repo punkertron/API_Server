@@ -2,26 +2,29 @@
 #include <iostream>
 #include <string>
 
-#include "crow.h"
-#include "Authorization.hpp"
 #include "ApiRequests.hpp"
+#include "Authorization.hpp"
+#include "crow.h"
 
 int main() {
-
     crow::App<Authorization> app;
     app.loglevel(crow::LogLevel::INFO);  // default
 
     CROW_ROUTE(app, "/")([]() { return "Hello world\n"; });
 
-    CROW_ROUTE(app, "/auth/sign-up")(
-        [](const crow::request& req)
-        {   
-            crow::json::rvalue json = crow::json::load(req.body);
-            if (!json)
-                return crow::response(crow::status::BAD_REQUEST);
-            return signUp(json);
-        }
-    );
+    CROW_ROUTE(app, "/auth/sign-up")
+    ([](const crow::request& req) {
+        crow::json::rvalue json = crow::json::load(req.body);
+        if (!json) return crow::response(crow::status::BAD_REQUEST);
+        return signUp(json);
+    });
+
+    CROW_ROUTE(app, "/auth/sign-in")
+    ([](const crow::request& req) {
+        crow::json::rvalue json = crow::json::load(req.body);
+        if (!json) return crow::response(crow::status::BAD_REQUEST);
+        return signIn(json);
+    });
 
     app.port(18080).multithreaded().run();
 }
@@ -58,5 +61,5 @@ int main() {
 // }
 
 // CROW_ROUTE(app, "/test/<int>/<int>")
-    //     .methods(crow::HTTPMethod::POST)(
-    //         [](int a, int b) { return std::to_string(a + b) + '\n'; });
+//     .methods(crow::HTTPMethod::POST)(
+//         [](int a, int b) { return std::to_string(a + b) + '\n'; });
