@@ -14,7 +14,7 @@
 crow::response signUp(const crow::json::rvalue &json) {
     try {
         std::string user(json["user"].s());
-        std::string password(json["user"].s());
+        std::string password(json["password"].s());
 
         try {
             env e;
@@ -87,7 +87,7 @@ crow::response signUp(const crow::json::rvalue &json) {
 crow::response signIn(const crow::json::rvalue &json) {
     try {
         std::string user(json["user"].s());
-        std::string password(json["user"].s());
+        std::string password(json["password"].s());
 
         env e;
         sql::mysql::MySQL_Driver *driver =
@@ -102,6 +102,16 @@ crow::response signIn(const crow::json::rvalue &json) {
         sql::ResultSet *res = pstmt->executeQuery();
 
         if (res->next()) {
+            std::string pass(generateHash(password));
+
+            if (pass != res->getString("hash_pass")) {
+                conn->close();
+                delete conn;
+                delete pstmt;
+                delete res;
+                return crow::response(crow::status::UNAUTHORIZED);
+            }
+
             std::string token(generateToken());
             crow::json::wvalue j;
             j["token"] = token;
