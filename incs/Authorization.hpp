@@ -50,7 +50,7 @@ struct Authorization : crow::ILocalMiddleware
         auto it = users.find(username);
         if (it == users.end() || it->second != password)
         {
-            res.code = 401;
+            res.code = crow::status::UNAUTHORIZED;
             res.end();
             return;
         }

@@ -1,10 +1,3 @@
-#include <cppconn/prepared_statement.h>
-#include <cppconn/resultset.h>
-#include <cppconn/statement.h>
-#include <mysql_connection.h>
-#include <mysql_driver.h>
-#include <mysql_error.h>
-
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -14,25 +7,23 @@
 #include "ApiRequests.hpp"
 
 int main() {
+
     crow::App<Authorization> app;
     app.loglevel(crow::LogLevel::INFO);  // default
 
     CROW_ROUTE(app, "/")([]() { return "Hello world\n"; });
 
-    // CROW_ROUTE(app, "/test/<int>/<int>")
-    //     .methods(crow::HTTPMethod::POST)(
-    //         [](int a, int b) { return std::to_string(a + b) + '\n'; });
-
-    CROW_ROUTE(app, "/auth/sign-in")(
+    CROW_ROUTE(app, "/auth/sign-up")(
         [](const crow::request& req)
         {   
-            crow::json::wvalue json = authUser(req);
-            return json;
+            crow::json::rvalue json = crow::json::load(req.body);
+            if (!json)
+                return crow::response(crow::status::BAD_REQUEST);
+            return signUp(json);
         }
     );
-    CROW_ROUTE(app, "/api/v1/files")([] { return "hi\n"; });
 
-    app.port(18080).run();
+    app.port(18080).multithreaded().run();
 }
 
 // sql::mysql::MySQL_Driver *driver;
@@ -65,3 +56,7 @@ int main() {
 // } catch (const std::exception &e) {
 //     std::cerr << e.what() << std::endl;
 // }
+
+// CROW_ROUTE(app, "/test/<int>/<int>")
+    //     .methods(crow::HTTPMethod::POST)(
+    //         [](int a, int b) { return std::to_string(a + b) + '\n'; });
