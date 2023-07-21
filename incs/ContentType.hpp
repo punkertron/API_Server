@@ -5,7 +5,7 @@
 
 #include "crow.h"
 
-struct ContentType {
+struct ContentType : crow::ILocalMiddleware {
     struct context {};
 
     void before_handle(crow::request& req, crow::response& res, context& ctx) {
