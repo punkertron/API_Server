@@ -4,10 +4,11 @@
 
 #include "ApiRequests.hpp"
 #include "Authorization.hpp"
+#include "ContentType.hpp"
 #include "crow.h"
 
 int main() {
-    crow::App<Authorization> app;
+    crow::App<ContentType, Authorization> app;
     app.loglevel(crow::LogLevel::INFO);  // default
 
     CROW_ROUTE(app, "/").CROW_MIDDLEWARES(
