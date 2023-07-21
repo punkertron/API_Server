@@ -10,7 +10,8 @@ int main() {
     crow::App<Authorization> app;
     app.loglevel(crow::LogLevel::INFO);  // default
 
-    CROW_ROUTE(app, "/")([]() { return "Hello world\n"; });
+    CROW_ROUTE(app, "/").CROW_MIDDLEWARES(
+        app, Authorization)([]() { return "Hello world\n"; });
 
     CROW_ROUTE(app, "/auth/sign-up")
     ([](const crow::request& req) {
