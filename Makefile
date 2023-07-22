@@ -11,7 +11,7 @@ INC_DIR		= ./incs
 INC			= ${INC_DIR} ./crow
 INCLUDES	= ${INC:%=-I %}
 
-LDLIBS		= -pthread -lmysqlcppconn -lcryptopp -lpqxx -lpq
+LDLIBS		= -lcryptopp -lpqxx -lpq
 
 DEPS		= ${OBJS:%.o=%.d}
 
