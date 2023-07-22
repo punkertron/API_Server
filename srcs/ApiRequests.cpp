@@ -112,49 +112,93 @@ crow::response signIn(const crow::json::rvalue &json) {
 
 crow::response uploadFiles(const crow::request &req) {
     crow::multipart::message file_message(req);
-    for (const auto &part : file_message.part_map) {
-        const auto &part_name = part.first;
-        const auto &part_value = part.second;
+    std::string user_token(req.get_header_value("Authorization").substr(7));
+    crow::json::wvalue return_json;
 
-        if ("InputFile" == part_name) {
-            auto headers_it = part_value.headers.find("Content-Disposition");
-            if (headers_it == part_value.headers.end()) {
-                CROW_LOG_ERROR << "No Content-Disposition found";
-                return crow::response(400);
-            }
-            auto params_it = headers_it->second.params.find("filename");
-            if (params_it == headers_it->second.params.end()) {
-                CROW_LOG_ERROR
-                    << "Part with name \"InputFile\" should have a file";
-                return crow::response(400);
-            }
-            const std::string outfile_name =
-                std::string("./files/") + params_it->second;
+    try {
+        env e;
 
-            for (const auto &part_header : part_value.headers) {
-                const auto &part_header_name = part_header.first;
-                const auto &part_header_val = part_header.second;
-                CROW_LOG_DEBUG << "Header: " << part_header_name << '='
-                               << part_header_val.value;
-                for (const auto &param : part_header_val.params) {
-                    const auto &param_key = param.first;
-                    const auto &param_val = param.second;
-                    CROW_LOG_DEBUG << " Param: " << param_key << ','
-                                   << param_val;
+        pqxx::connection c(e.conn_string);
+        pqxx::work w(c);
+
+        c.prepare("find_user_id",
+                  "SELECT user_id FROM server.users WHERE hash_token = $1");
+        pqxx::row r =
+            w.exec_prepared1("find_user_id", generateHash(user_token));
+        std::string user_id = std::to_string(r[0].as<int>());
+
+        for (const auto &part : file_message.part_map) {
+            const auto &part_name = part.first;
+            const auto &part_value = part.second;
+
+            if ("InputFile" == part_name) {
+                auto headers_it =
+                    part_value.headers.find("Content-Disposition");
+                if (headers_it == part_value.headers.end()) {
+                    CROW_LOG_ERROR << "No Content-Disposition found";
+                    return crow::response(crow::status::BAD_REQUEST);
                 }
-            }
+                auto params_it = headers_it->second.params.find("filename");
+                if (params_it == headers_it->second.params.end()) {
+                    CROW_LOG_ERROR
+                        << "Part with name \"InputFile\" should have a file";
+                    return crow::response(crow::status::BAD_REQUEST);
+                }
 
-            // Create a new file with the extracted file name and write file
-            // contents to it
-            std::ofstream out_file(outfile_name);
-            if (!out_file) {
-                CROW_LOG_ERROR << " Write to file failed";
-                continue;
+                // TODO: check if file already in DB!
+                c.prepare("insert_files_info",
+                          "INSERT INTO server.files_info(name, user_id) "
+                          "VALUES($1, $2)");
+                w.exec_prepared0("insert_files_info", params_it->second,
+                                 user_id);
+                w.commit();
+
+                try {
+                    c.prepare("find_file_id",
+                              "SELECT file_id FROM server.files_info WHERE "
+                              "name = $1 AND user_id = $2");
+                    r = w.exec_prepared1("find_file_id", params_it->second,
+                                         user_id);
+                } catch (const pqxx::unexpected_rows &e) {
+                    std::cerr << e.what() << std::endl;
+                    c.close();
+                    return crow::response(crow::status::BAD_REQUEST);
+                }
+                return_json = {{"file",
+                                {{"file_id", r[0].as<int>()},
+                                 {"file_name", params_it->second}}}};
+
+                const std::string outfile_name =
+                    std::string("./files/") + params_it->second;
+
+                for (const auto &part_header : part_value.headers) {
+                    const auto &part_header_name = part_header.first;
+                    const auto &part_header_val = part_header.second;
+                    CROW_LOG_DEBUG << "Header: " << part_header_name << '='
+                                   << part_header_val.value;
+                    for (const auto &param : part_header_val.params) {
+                        const auto &param_key = param.first;
+                        const auto &param_val = param.second;
+                        CROW_LOG_DEBUG << " Param: " << param_key << ','
+                                       << param_val;
+                    }
+                }
+
+                // Create a new file with the extracted file name and write file
+                // contents to it
+                std::ofstream out_file(outfile_name);
+                if (!out_file) {
+                    CROW_LOG_ERROR << " Write to file failed";
+                    continue;
+                }
+                out_file << part_value.body;
+                out_file.close();
+                CROW_LOG_INFO << " Contents written to " << outfile_name;
             }
-            out_file << part_value.body;
-            out_file.close();
-            CROW_LOG_INFO << " Contents written to " << outfile_name;
         }
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        return crow::response(crow::status::INTERNAL_SERVER_ERROR);
     }
-    return crow::response(crow::status::OK);
+    return crow::response(return_json);
 }
