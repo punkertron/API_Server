@@ -6,14 +6,20 @@
 #include "crow.h"
 
 struct env {
+    std::string dbname;
     std::string user;
-    std::string pass;
+    std::string password;
+
+    std::string conn_string;
 
     env() {
         std::ifstream f;  // TODO : replace with getenv()
         f.open(".env");
-        f >> user >> pass;
+        f >> dbname >> user >> password;
         f.close();
+
+        conn_string = std::string("dbname=") + dbname + " user=" + user +
+                      " password=" + password;
     }
 };
 

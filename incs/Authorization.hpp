@@ -1,14 +1,8 @@
 #ifndef AUTHORIZATION_HPP
 #define AUTHORIZATION_HPP
 
-#include <cppconn/prepared_statement.h>
-#include <cppconn/resultset.h>
-#include <cppconn/statement.h>
-#include <mysql_connection.h>
-#include <mysql_driver.h>
-#include <mysql_error.h>
-
 #include <iostream>
+#include <pqxx/pqxx>
 #include <string>
 
 #include "ApiRequests.hpp"  // REMOVE WHEN ADD getenv
@@ -32,27 +26,20 @@ struct Authorization : crow::ILocalMiddleware {
         std::string input_hash_token(generateHash(auth.substr(7)));
 
         env e;
-        sql::mysql::MySQL_Driver* driver =
-            sql::mysql::get_mysql_driver_instance();
-        sql::Connection* conn =
-            driver->connect("tcp://127.0.0.1:3306", e.user, e.pass);
+        pqxx::connection c(e.conn_string);
+        pqxx::work w(c);
 
-        std::string query =
-            "SELECT hash_token FROM server.users WHERE hash_token = ?;";
-        sql::PreparedStatement* pstmt = conn->prepareStatement(query);
-        pstmt->setString(1, input_hash_token);
-        sql::ResultSet* result = pstmt->executeQuery();
-        if (result->next())
+        c.prepare("find",
+                  "SELECT hash_token FROM server.users WHERE hash_token = $1");
+        pqxx::result result = w.exec_prepared("find", input_hash_token);
+
+        if (result.size())
             res.code = crow::status::ACCEPTED;
         else {
             res.code = crow::status::UNAUTHORIZED;
             res.end();
         }
-
-        conn->close();
-        delete conn;
-        delete pstmt;
-        delete result;
+        c.close();
 
         (void)ctx;
         return;

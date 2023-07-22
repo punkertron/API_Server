@@ -3,3 +3,4 @@ objs
 server
 .env
 files
+test.cpp

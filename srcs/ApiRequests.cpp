@@ -1,13 +1,7 @@
 #include "ApiRequests.hpp"
 
-#include <cppconn/prepared_statement.h>
-#include <cppconn/resultset.h>
-#include <cppconn/statement.h>
-#include <mysql_connection.h>
-#include <mysql_driver.h>
-#include <mysql_error.h>
-
 #include <fstream>
+#include <pqxx/pqxx>
 
 #include "HashPasswordToken.hpp"
 
@@ -18,67 +12,51 @@ crow::response signUp(const crow::json::rvalue &json) {
 
         try {
             env e;
-            sql::mysql::MySQL_Driver *driver =
-                sql::mysql::get_mysql_driver_instance();
-            sql::Connection *conn =
-                driver->connect("tcp://127.0.0.1:3306", e.user, e.pass);
 
-            if (!conn) throw "No connection";
-            std::string query(
-                "SELECT username FROM server.users WHERE username = ?;");
-            sql::PreparedStatement *pstmt = conn->prepareStatement(query);
-            pstmt->setString(1, user);
-            sql::ResultSet *res = pstmt->executeQuery();
+            pqxx::connection c(e.conn_string);
+            pqxx::work w(c);
 
-            if (res->next()) {
+            c.prepare("find",
+                      "SELECT username FROM server.users WHERE username = $1");
+            pqxx::result res = w.exec_prepared("find", user);
+
+            if (res.size()) {
                 std::cerr << "User already exists!" << std::endl;
-                conn->close();
-                delete conn;
-                delete pstmt;
-                delete res;
+                c.close();
                 return crow::response(crow::status::BAD_REQUEST);
             } else {
-                std::string insert_query(
-                    "INSERT INTO server.users(username, hash_pass) VALUES (?, "
-                    "?);");
-                delete pstmt;
-                pstmt = conn->prepareStatement(insert_query);
-                pstmt->setString(1, user);
-                pstmt->setString(2, generateHash(password));
-                int code = pstmt->executeUpdate();
-                if (code == 0) {
-                    conn->close();
-                    delete conn;
-                    delete pstmt;
-                    delete res;
-                    throw "Can't insert";
-                }
-                // pstmt->close();
-                query = "SELECT user_id FROM server.users WHERE username = ?;";
-                delete pstmt;
-                pstmt = conn->prepareStatement(query);
-                pstmt->setString(1, user);
+                c.prepare("insert",
+                          "INSERT INTO server.users(username, hash_pass) "
+                          "VALUES ($1, $2)");
+                try {
+                    w.exec_prepared0("insert", user, generateHash(password));
+                    w.commit();
 
-                res = pstmt->executeQuery();
-                int id = -1;
-                if (res->next()) id = res->getInt("user_id");
-                crow::json::wvalue j;
-                j["id"] = id;
-                return crow::response(j);
+                    c.prepare(
+                        "find_id",
+                        "SELECT user_id FROM server.users WHERE username = $1");
+                    pqxx::row r = w.exec_prepared1("find_id", user);
+
+                    int id = r[0].as<int>();
+
+                    crow::json::wvalue j;
+                    j["id"] = id;
+                    return crow::response(j);
+                } catch (const pqxx::unexpected_rows &e) {
+                    c.close();
+                    std::cerr << e.what() << std::endl;
+                    return crow::response(crow::status::BAD_REQUEST);
+                }
             }
-            conn->close();
-            delete conn;
-            delete pstmt;
-            delete res;
         } catch (const std::runtime_error &e) {
             std::cerr << e.what() << std::endl;
             return crow::response(crow::status::INTERNAL_SERVER_ERROR);
         }
     } catch (const std::runtime_error &e) {
-        std::cerr << "UB " << e.what() << std::endl;
+        std::cerr << e.what() << std::endl;
         return crow::response(crow::status::BAD_REQUEST);
     } catch (const std::exception &e) {
-        std::cerr << "ER " << e.what() << std::endl;
+        std::cerr << e.what() << std::endl;
         return crow::response(crow::status::INTERNAL_SERVER_ERROR);
     }
 }
@@ -90,25 +68,18 @@ crow::response signIn(const crow::json::rvalue &json) {
         std::string password(json["password"].s());
 
         env e;
-        sql::mysql::MySQL_Driver *driver =
-            sql::mysql::get_mysql_driver_instance();
-        sql::Connection *conn =
-            driver->connect("tcp://127.0.0.1:3306", e.user, e.pass);
+        pqxx::connection c(e.conn_string);
+        pqxx::work w(c);
 
-        std::string query(
-            "SELECT hash_pass FROM server.users WHERE username = ?;");
-        sql::PreparedStatement *pstmt = conn->prepareStatement(query);
-        pstmt->setString(1, user);
-        sql::ResultSet *res = pstmt->executeQuery();
+        c.prepare("find_pass",
+                  "SELECT hash_pass FROM server.users WHERE username = $1");
 
-        if (res->next()) {
+        try {
+            pqxx::row r = w.exec_prepared1("find_pass", user);
             std::string pass(generateHash(password));
 
-            if (pass != res->getString("hash_pass")) {
-                conn->close();
-                delete conn;
-                delete pstmt;
-                delete res;
+            if (pass != r[0].as<std::string>()) {
+                c.close();
                 return crow::response(crow::status::UNAUTHORIZED);
             }
 
@@ -119,22 +90,17 @@ crow::response signIn(const crow::json::rvalue &json) {
             std::string update_query(
                 "UPDATE server.users SET hash_token = ? WHERE username = ?;");
 
-            delete pstmt;
-            pstmt = conn->prepareStatement(update_query);
-            pstmt->setString(1, generateHash(token));
-            pstmt->setString(2, user);
-            pstmt->executeUpdate();
+            c.prepare(
+                "update_token",
+                "UPDATE server.users SET hash_token = $1 WHERE username = $2");
+            w.exec_prepared0("update_token", generateHash(token), user);
+            w.commit();
 
-            delete pstmt;
-            conn->close();
-            delete conn;
+            c.close();
             return crow::response(j);
-        } else {
+        } catch (const pqxx::unexpected_rows &e) {
             std::cerr << "User doesn't exists" << std::endl;
-            conn->close();
-            delete conn;
-            delete pstmt;
-            delete res;
+            c.close();
             return crow::response(crow::status::BAD_REQUEST);
         }
 
