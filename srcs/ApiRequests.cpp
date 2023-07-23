@@ -110,7 +110,7 @@ crow::response signIn(const crow::json::rvalue &json) {
     }
 }
 
-crow::response uploadFiles(const crow::request &req) {
+crow::response filesUpload(const crow::request &req) {
     crow::multipart::message file_message(req);
     std::string user_token(req.get_header_value("Authorization").substr(7));
     crow::json::wvalue return_json;
@@ -127,6 +127,19 @@ crow::response uploadFiles(const crow::request &req) {
             w.exec_prepared1("find_user_id", generateHash(user_token));
         std::string user_id = std::to_string(r[0].as<int>());
 
+        c.prepare("check",
+                              "SELECT file_id FROM server.files_info WHERE "
+                              "name = $1 AND user_id = $2");
+        
+        c.prepare("find_file_id",
+                              "SELECT file_id FROM server.files_info WHERE "
+                              "name = $1 AND user_id = $2");
+
+        c.prepare("insert_files_info",
+                              "INSERT INTO server.files_info(name, user_id) "
+                              "VALUES($1, $2)");
+
+        int file_number = 0;
         for (const auto &part : file_message.part_map) {
             const auto &part_name = part.first;
             const auto &part_value = part.second;
@@ -145,22 +158,14 @@ crow::response uploadFiles(const crow::request &req) {
                     return crow::response(crow::status::BAD_REQUEST);
                 }
 
+                // TODO: if user try to upload several files, but one or more of them exist what should I do?
                 try {
-                    c.prepare("check",
-                              "SELECT file_id FROM server.files_info WHERE "
-                              "name = $1 AND user_id = $2");
                     w.exec_prepared0("check", params_it->second, user_id);
 
-                    c.prepare("insert_files_info",
-                              "INSERT INTO server.files_info(name, user_id) "
-                              "VALUES($1, $2)");
                     w.exec_prepared0("insert_files_info", params_it->second,
                                      user_id);
                     w.commit();
 
-                    c.prepare("find_file_id",
-                              "SELECT file_id FROM server.files_info WHERE "
-                              "name = $1 AND user_id = $2");
                     r = w.exec_prepared1("find_file_id", params_it->second,
                                          user_id);
                 } catch (const pqxx::unexpected_rows &e) {
@@ -168,9 +173,10 @@ crow::response uploadFiles(const crow::request &req) {
                     c.close();
                     return crow::response(crow::status::BAD_REQUEST);
                 }
-                return_json = {{"file",
-                                {{"file_id", r[0].as<int>()},
-                                 {"file_name", params_it->second}}}};
+                return_json[std::string("InputFile_") + std::to_string(file_number)] = {
+                    {"file_id", r[0].as<int>()},
+                    {"file_name", params_it->second}
+                };
 
                 const std::string outfile_name =
                     std::string("./files/") + params_it->second;
@@ -198,6 +204,8 @@ crow::response uploadFiles(const crow::request &req) {
                 out_file << part_value.body;
                 out_file.close();
                 CROW_LOG_INFO << " Contents written to " << outfile_name;
+
+                ++file_number;
             }
         }
     } catch (const std::exception &e) {
@@ -205,4 +213,42 @@ crow::response uploadFiles(const crow::request &req) {
         return crow::response(crow::status::INTERNAL_SERVER_ERROR);
     }
     return crow::response(return_json);
+}
+
+
+crow::response filesList(const crow::request &req)
+{
+    std::string user_token(req.get_header_value("Authorization").substr(7));
+
+    try {
+        env e;
+
+        pqxx::connection c(e.conn_string);
+        pqxx::work w(c);
+
+        c.prepare("find_user_id", "SELECT user_id FROM server.users WHERE hash_token = $1");
+        pqxx::row r = w.exec_prepared1("find_user_id", generateHash(user_token));
+
+        c.prepare("find_files", "SELECT * FROM server.files_info WHERE user_id = $1");
+        pqxx::result res = w.exec_prepared("find_files", r[0].as<int>());
+
+        crow::json::wvalue json;
+       // int i = 0;
+
+        for (int i = 0; i < res.size(); ++i)
+        {
+            json[std::string("InputFile_") + std::to_string(i)] = {
+                {"file_id", res[i][0].as<int>()},
+                {"name", res[i][1].c_str()},
+                {"is_deleted", res[i][2].as<bool>()}
+            };
+        }
+        return crow::response(json);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+        // c.close();
+        return crow::response(crow::status::INTERNAL_SERVER_ERROR);
+    }
 }

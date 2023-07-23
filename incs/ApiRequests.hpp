@@ -25,6 +25,7 @@ struct env {
 
 crow::response signUp(const crow::json::rvalue& json);
 crow::response signIn(const crow::json::rvalue& json);
-crow::response uploadFiles(const crow::request& req);
+crow::response filesUpload(const crow::request& req);
+crow::response filesList(const crow::request& req);
 
 #endif  // APIREQUESTS_HPP

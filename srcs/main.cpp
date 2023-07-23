@@ -28,10 +28,19 @@ int main() {
             return signIn(json);
         });
 
-    CROW_ROUTE(app, "/api/v1/uploadfiles")
+    CROW_ROUTE(app, "/api/v1/files/upload")
         .methods(crow::HTTPMethod::POST)
         .CROW_MIDDLEWARES(app, Authorization)(
-            [](const crow::request& req) { return uploadFiles(req); });
+            [](const crow::request& req) { return filesUpload(req); });
+    
+    CROW_ROUTE(app, "/api/v1/files/list").CROW_MIDDLEWARES(app, Authorization)
+    (
+        [] (const crow::request& req)
+        {
+            return filesList(req);
+        }
+    );
+
 
     app.port(18080).multithreaded().run();
 }
