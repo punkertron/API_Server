@@ -5,7 +5,7 @@
 #include "ApiRequests.hpp"
 #include "Authorization.hpp"
 #include "ContentType.hpp"
-#include "crow.h"
+#include "crow_all.h"
 
 int main() {
     crow::App<ContentType, Authorization> app;

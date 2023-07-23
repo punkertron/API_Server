@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "crow.h"
+#include "crow_all.h"
 
 struct env {
     std::string dbname;

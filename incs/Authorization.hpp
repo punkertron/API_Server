@@ -7,7 +7,7 @@
 
 #include "ApiRequests.hpp"  // REMOVE WHEN ADD getenv
 #include "HashPasswordToken.hpp"
-#include "crow.h"
+#include "crow_all.h"
 
 struct Authorization : crow::ILocalMiddleware {
     struct context {};

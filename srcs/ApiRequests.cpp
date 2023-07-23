@@ -145,15 +145,19 @@ crow::response uploadFiles(const crow::request &req) {
                     return crow::response(crow::status::BAD_REQUEST);
                 }
 
-                // TODO: check if file already in DB!
-                c.prepare("insert_files_info",
-                          "INSERT INTO server.files_info(name, user_id) "
-                          "VALUES($1, $2)");
-                w.exec_prepared0("insert_files_info", params_it->second,
-                                 user_id);
-                w.commit();
-
                 try {
+                    c.prepare("check",
+                              "SELECT file_id FROM server.files_info WHERE "
+                              "name = $1 AND user_id = $2");
+                    w.exec_prepared0("check", params_it->second, user_id);
+
+                    c.prepare("insert_files_info",
+                              "INSERT INTO server.files_info(name, user_id) "
+                              "VALUES($1, $2)");
+                    w.exec_prepared0("insert_files_info", params_it->second,
+                                     user_id);
+                    w.commit();
+
                     c.prepare("find_file_id",
                               "SELECT file_id FROM server.files_info WHERE "
                               "name = $1 AND user_id = $2");

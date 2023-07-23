@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#include "crow.h"
+#include "crow_all.h"
 
 struct ContentType : crow::ILocalMiddleware {
     struct context {};
