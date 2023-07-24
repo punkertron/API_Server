@@ -5,20 +5,23 @@
 #include <pqxx/pqxx>
 #include <string>
 
-#include "crow_all.h"
-
 #include "ApiRequests.hpp"  // REMOVE WHEN ADD getenv
 #include "HashPasswordToken.hpp"
+#include "crow_all.h"
 
-struct Authorization : crow::ILocalMiddleware {
-    struct context {};
+struct Authorization : crow::ILocalMiddleware
+{
+    struct context
+    {
+    };
 
-    void before_handle(crow::request& req, crow::response& res, context& ctx) {
+    void before_handle(crow::request& req, crow::response& res, context& ctx)
+    {
         std::string auth;
 
         if (req.headers.count("Authorization") == 0 ||
-            (auth = req.get_header_value("Authorization")).substr(0, 6) !=
-                "Bearer") {
+            (auth = req.get_header_value("Authorization")).substr(0, 6) != "Bearer")
+        {
             res.code = crow::status::UNAUTHORIZED;
             res.end();
             return;
@@ -30,13 +33,13 @@ struct Authorization : crow::ILocalMiddleware {
         pqxx::connection c(e.conn_string);
         pqxx::work w(c);
 
-        c.prepare("find",
-                  "SELECT hash_token FROM server.users WHERE hash_token = $1");
+        c.prepare("find", "SELECT hash_token FROM server.users WHERE hash_token = $1");
         pqxx::result result = w.exec_prepared("find", input_hash_token);
 
         if (result.size())
             res.code = crow::status::ACCEPTED;
-        else {
+        else
+        {
             res.code = crow::status::UNAUTHORIZED;
             res.end();
         }
@@ -46,7 +49,8 @@ struct Authorization : crow::ILocalMiddleware {
         return;
     }
 
-    void after_handle(crow::request& req, crow::response& res, context& ctx) {
+    void after_handle(crow::request& req, crow::response& res, context& ctx)
+    {
         (void)req;
         (void)res;
         (void)ctx;

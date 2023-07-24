@@ -5,21 +5,22 @@
 
 #include "crow_all.h"
 
-struct env {
+struct env
+{
     std::string dbname;
     std::string user;
     std::string password;
 
     std::string conn_string;
 
-    env() {
+    env()
+    {
         std::ifstream f;  // TODO : replace with getenv()
         f.open(".env");
         f >> dbname >> user >> password;
         f.close();
 
-        conn_string = std::string("dbname=") + dbname + " user=" + user +
-                      " password=" + password;
+        conn_string = std::string("dbname=") + dbname + " user=" + user + " password=" + password;
     }
 };
 
