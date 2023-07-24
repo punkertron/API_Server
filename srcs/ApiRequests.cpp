@@ -22,7 +22,6 @@ crow::response signUp(const crow::json::rvalue &json) {
 
             if (res.size()) {
                 std::cerr << "User already exists!" << std::endl;
-                c.close();
                 return crow::response(crow::status::BAD_REQUEST);
             } else {
                 c.prepare("insert",
@@ -43,7 +42,6 @@ crow::response signUp(const crow::json::rvalue &json) {
                     j["id"] = id;
                     return crow::response(j);
                 } catch (const pqxx::unexpected_rows &e) {
-                    c.close();
                     std::cerr << e.what() << std::endl;
                     return crow::response(crow::status::BAD_REQUEST);
                 }
@@ -79,7 +77,6 @@ crow::response signIn(const crow::json::rvalue &json) {
             std::string pass(generateHash(password));
 
             if (pass != r[0].as<std::string>()) {
-                c.close();
                 return crow::response(crow::status::UNAUTHORIZED);
             }
 
@@ -96,11 +93,9 @@ crow::response signIn(const crow::json::rvalue &json) {
             w.exec_prepared0("update_token", generateHash(token), user);
             w.commit();
 
-            c.close();
             return crow::response(j);
         } catch (const pqxx::unexpected_rows &e) {
             std::cerr << "User doesn't exists" << std::endl;
-            c.close();
             return crow::response(crow::status::BAD_REQUEST);
         }
 
@@ -171,7 +166,6 @@ crow::response filesUpload(const crow::request &req) {
                                          user_id);
                 } catch (const pqxx::unexpected_rows &e) {
                     std::cerr << e.what() << std::endl;
-                    c.close();
                     return crow::response(crow::status::BAD_REQUEST);
                 }
                 return_json[std::string("InputFile_") +
@@ -221,7 +215,6 @@ crow::response filesList(const crow::request &req) {
 
     try {
         env e;
-
         pqxx::connection c(e.conn_string);
         pqxx::work w(c);
 
@@ -235,7 +228,6 @@ crow::response filesList(const crow::request &req) {
         pqxx::result res = w.exec_prepared("find_files", r[0].as<int>());
 
         crow::json::wvalue json;
-        // int i = 0;
 
         for (int i = 0; i < res.size(); ++i) {
             json[std::string("InputFile_") + std::to_string(i)] = {
@@ -246,7 +238,40 @@ crow::response filesList(const crow::request &req) {
         return crow::response(json);
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
-        // c.close();
         return crow::response(crow::status::INTERNAL_SERVER_ERROR);
     }
+}
+
+crow::response filesDelete(const crow::request &req)
+{
+    try {
+        env e;
+
+        pqxx::connection c(e.conn_string);
+        pqxx::work w(c);
+
+        c.prepare("find_file_id", "SELECT is_deleted FROM server.files_info WHERE file_id = $1");
+        
+        int file_id = (crow::json::load(req.body))["file_id"].i();
+        std::cerr << file_id << std::endl;
+        pqxx::row r = w.exec_prepared1("find_file_id", file_id);
+
+        if (!r[0].as<bool>())
+        {
+            c.prepare("update_file_status", "UPDATE server.files_info SET is_deleted = true WHERE file_id = $1");
+            w.exec_prepared0("update_file_status", file_id);
+            w.commit();
+        }
+        else
+            return crow::response(crow::status::BAD_REQUEST);
+    }
+    catch (const pqxx::unexpected_rows &e) {
+        std::cerr << "File doesn't exists" << std::endl;
+        return crow::response(crow::status::BAD_REQUEST);
+    }
+    catch (const std::exception &e) {
+        CROW_LOG_DEBUG << e.what();
+        return crow::response(crow::status::BAD_REQUEST);
+    }
+    return crow::response(crow::status::OK);
 }

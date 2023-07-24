@@ -35,12 +35,12 @@ struct ContentTypeMultipart : crow::ILocalMiddleware {
         std::string content_type;
 
         if (req.headers.count("Content-Type") == 0 ||
-            (content_type = req.get_header_value("Content-Type").substr(0, 19)) !=
+            (content_type =
+                 req.get_header_value("Content-Type").substr(0, 19)) !=
                 "multipart/form-data") {
-
             res.code = crow::status::BAD_REQUEST;
             res.end();
-            return ;
+            return;
         }
         (void)ctx;
     }

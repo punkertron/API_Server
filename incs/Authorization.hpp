@@ -5,9 +5,10 @@
 #include <pqxx/pqxx>
 #include <string>
 
+#include "crow_all.h"
+
 #include "ApiRequests.hpp"  // REMOVE WHEN ADD getenv
 #include "HashPasswordToken.hpp"
-#include "crow_all.h"
 
 struct Authorization : crow::ILocalMiddleware {
     struct context {};

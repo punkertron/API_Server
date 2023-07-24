@@ -37,6 +37,11 @@ int main() {
         .CROW_MIDDLEWARES(app, ContentTypeJson, Authorization)(
             [](const crow::request& req) { return filesList(req); });
 
+    CROW_ROUTE(app, "/api/v1/files/delete")
+        .methods(crow::HTTPMethod::DELETE)
+        .CROW_MIDDLEWARES(app, ContentTypeJson, Authorization)(
+            [](const crow::request& req) { return filesDelete(req); });
+
     app.port(18080).multithreaded().run();
 }
 
