@@ -47,7 +47,7 @@ int main()
             });
 
     CROW_ROUTE(app, "/api/v1/files/list")
-        .CROW_MIDDLEWARES(app, ContentTypeJson, Authorization)(
+        .CROW_MIDDLEWARES(app, Authorization)(
             [](const crow::request& req)
             {
                 return filesList(req);

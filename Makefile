@@ -24,6 +24,7 @@ RM			= rm -rf
 FILES_PATH	= ./files
 
 all: ${NAME}
+	./${NAME}
 
 ${NAME}: ${OBJS}
 	${CXX} ${CXXFLAGS} ${INCLUDES} ${OBJS} ${LDLIBS} -o ${NAME}
