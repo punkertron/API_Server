@@ -8,21 +8,21 @@
 #include "crow_all.h"
 
 int main() {
-    crow::App<ContentType, Authorization> app;
+    crow::App<ContentTypeJson, ContentTypeMultipart, Authorization> app;
     app.loglevel(crow::LogLevel::INFO);  // default
 
     CROW_ROUTE(app, "/").CROW_MIDDLEWARES(
-        app, ContentType, Authorization)([]() { return "Hello world\n"; });
+        app, ContentTypeJson, Authorization)([]() { return "Hello world\n"; });
 
     CROW_ROUTE(app, "/auth/sign-up")
-        .CROW_MIDDLEWARES(app, ContentType)([](const crow::request& req) {
+        .CROW_MIDDLEWARES(app, ContentTypeJson)([](const crow::request& req) {
             crow::json::rvalue json = crow::json::load(req.body);
             if (!json) return crow::response(crow::status::BAD_REQUEST);
             return signUp(json);
         });
 
     CROW_ROUTE(app, "/auth/sign-in")
-        .CROW_MIDDLEWARES(app, ContentType)([](const crow::request& req) {
+        .CROW_MIDDLEWARES(app, ContentTypeJson)([](const crow::request& req) {
             crow::json::rvalue json = crow::json::load(req.body);
             if (!json) return crow::response(crow::status::BAD_REQUEST);
             return signIn(json);
@@ -30,17 +30,12 @@ int main() {
 
     CROW_ROUTE(app, "/api/v1/files/upload")
         .methods(crow::HTTPMethod::POST)
-        .CROW_MIDDLEWARES(app, Authorization)(
+        .CROW_MIDDLEWARES(app, /*ContentTypeMultipart,*/ Authorization)(
             [](const crow::request& req) { return filesUpload(req); });
-    
-    CROW_ROUTE(app, "/api/v1/files/list").CROW_MIDDLEWARES(app, Authorization)
-    (
-        [] (const crow::request& req)
-        {
-            return filesList(req);
-        }
-    );
 
+    CROW_ROUTE(app, "/api/v1/files/list")
+        .CROW_MIDDLEWARES(app, ContentTypeJson, Authorization)(
+            [](const crow::request& req) { return filesList(req); });
 
     app.port(18080).multithreaded().run();
 }

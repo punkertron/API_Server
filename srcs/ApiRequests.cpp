@@ -128,16 +128,16 @@ crow::response filesUpload(const crow::request &req) {
         std::string user_id = std::to_string(r[0].as<int>());
 
         c.prepare("check",
-                              "SELECT file_id FROM server.files_info WHERE "
-                              "name = $1 AND user_id = $2");
-        
+                  "SELECT file_id FROM server.files_info WHERE "
+                  "name = $1 AND user_id = $2");
+
         c.prepare("find_file_id",
-                              "SELECT file_id FROM server.files_info WHERE "
-                              "name = $1 AND user_id = $2");
+                  "SELECT file_id FROM server.files_info WHERE "
+                  "name = $1 AND user_id = $2");
 
         c.prepare("insert_files_info",
-                              "INSERT INTO server.files_info(name, user_id) "
-                              "VALUES($1, $2)");
+                  "INSERT INTO server.files_info(name, user_id) "
+                  "VALUES($1, $2)");
 
         int file_number = 0;
         for (const auto &part : file_message.part_map) {
@@ -158,7 +158,8 @@ crow::response filesUpload(const crow::request &req) {
                     return crow::response(crow::status::BAD_REQUEST);
                 }
 
-                // TODO: if user try to upload several files, but one or more of them exist what should I do?
+                // TODO: if user try to upload several files, but one or more of
+                // them exist what should I do?
                 try {
                     w.exec_prepared0("check", params_it->second, user_id);
 
@@ -173,10 +174,10 @@ crow::response filesUpload(const crow::request &req) {
                     c.close();
                     return crow::response(crow::status::BAD_REQUEST);
                 }
-                return_json[std::string("InputFile_") + std::to_string(file_number)] = {
+                return_json[std::string("InputFile_") +
+                            std::to_string(file_number)] = {
                     {"file_id", r[0].as<int>()},
-                    {"file_name", params_it->second}
-                };
+                    {"file_name", params_it->second}};
 
                 const std::string outfile_name =
                     std::string("./files/") + params_it->second;
@@ -215,9 +216,7 @@ crow::response filesUpload(const crow::request &req) {
     return crow::response(return_json);
 }
 
-
-crow::response filesList(const crow::request &req)
-{
+crow::response filesList(const crow::request &req) {
     std::string user_token(req.get_header_value("Authorization").substr(7));
 
     try {
@@ -226,27 +225,26 @@ crow::response filesList(const crow::request &req)
         pqxx::connection c(e.conn_string);
         pqxx::work w(c);
 
-        c.prepare("find_user_id", "SELECT user_id FROM server.users WHERE hash_token = $1");
-        pqxx::row r = w.exec_prepared1("find_user_id", generateHash(user_token));
+        c.prepare("find_user_id",
+                  "SELECT user_id FROM server.users WHERE hash_token = $1");
+        pqxx::row r =
+            w.exec_prepared1("find_user_id", generateHash(user_token));
 
-        c.prepare("find_files", "SELECT * FROM server.files_info WHERE user_id = $1");
+        c.prepare("find_files",
+                  "SELECT * FROM server.files_info WHERE user_id = $1");
         pqxx::result res = w.exec_prepared("find_files", r[0].as<int>());
 
         crow::json::wvalue json;
-       // int i = 0;
+        // int i = 0;
 
-        for (int i = 0; i < res.size(); ++i)
-        {
+        for (int i = 0; i < res.size(); ++i) {
             json[std::string("InputFile_") + std::to_string(i)] = {
                 {"file_id", res[i][0].as<int>()},
                 {"name", res[i][1].c_str()},
-                {"is_deleted", res[i][2].as<bool>()}
-            };
+                {"is_deleted", res[i][2].as<bool>()}};
         }
         return crow::response(json);
-    }
-    catch (const std::exception &e)
-    {
+    } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
         // c.close();
         return crow::response(crow::status::INTERNAL_SERVER_ERROR);
