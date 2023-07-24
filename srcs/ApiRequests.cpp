@@ -212,7 +212,7 @@ crow::response filesList(const crow::request &req)
     }
 }
 
-crow::response filesDelete(const crow::request &req)
+crow::response filesDelete(int file_id)
 {
     try
     {
@@ -222,8 +222,6 @@ crow::response filesDelete(const crow::request &req)
 
         c.prepare("find_file_id", "SELECT is_deleted FROM server.files_info WHERE file_id = $1");
 
-        int file_id = (crow::json::load(req.body))["file_id"].i();
-        std::cerr << file_id << std::endl;
         pqxx::row r = w.exec_prepared1("find_file_id", file_id);
 
         if (!r[0].as<bool>())
@@ -246,4 +244,42 @@ crow::response filesDelete(const crow::request &req)
         return crow::response(crow::status::BAD_REQUEST);
     }
     return crow::response(crow::status::OK);
+}
+
+void filesDownload(crow::response &res, int file_id)
+{
+    try
+    {
+        env e;
+        pqxx::connection c(e.conn_string);
+        pqxx::work w(c);
+        pqxx::row r = w.exec1(std::string("SELECT name FROM server.files_info WHERE is_deleted = false AND file_id = ") +
+                              std::to_string(file_id));
+        std::string file_name(std::string("./files/") + r[0].c_str());
+
+        std::ifstream file(file_name, std::ios::binary);
+        if (file.is_open())
+        {
+            std::ostringstream ss;
+            ss << file.rdbuf();
+            file.close();
+            res.write(ss.str());
+        }
+        else
+        {
+            CROW_LOG_DEBUG << "Cannot open the file";
+            res.code = crow::status::INTERNAL_SERVER_ERROR;
+        }
+    }
+    catch (const pqxx::unexpected_rows &e)
+    {
+        CROW_LOG_ERROR << "File doesn't exists";
+        res.code = crow::status::BAD_REQUEST;
+    }
+    catch (const std::runtime_error &e)
+    {
+        CROW_LOG_ERROR << e.what();
+        res.code = crow::status::INTERNAL_SERVER_ERROR;
+    }
+    res.end();
 }

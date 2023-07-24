@@ -53,17 +53,22 @@ int main()
                 return filesList(req);
             });
 
-    CROW_ROUTE(app, "/api/v1/files/delete")
+    CROW_ROUTE(app, "/api/v1/files/delete/<int>")
         .methods(crow::HTTPMethod::DELETE)
-        .CROW_MIDDLEWARES(app, ContentTypeJson, Authorization)(
-            [](const crow::request& req)
+        .CROW_MIDDLEWARES(app, Authorization)(
+            [](int file_id)
             {
-                return filesDelete(req);
+                return filesDelete(file_id);
+            });
+
+    CROW_ROUTE(app, "/api/v1/files/download/<int>")
+        .methods(crow::HTTPMethod::GET)
+        .CROW_MIDDLEWARES(app, Authorization)(
+            [](crow::response& res, int file_id)
+            {
+                filesDownload(res, file_id);
+                return;
             });
 
     app.port(18080).multithreaded().run();
 }
-
-// CROW_ROUTE(app, "/test/<int>/<int>")
-//     .methods(crow::HTTPMethod::POST)(
-//         [](int a, int b) { return std::to_string(a + b) + '\n'; });
