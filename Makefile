@@ -11,7 +11,7 @@ INC_DIR		= ./incs
 INC			= ${INC_DIR} ./crow
 INCLUDES	= ${INC:%=-I %}
 
-LDLIBS		= -lcryptopp -lpqxx -lpq
+LDLIBS		=  -pthread -lcryptopp -lpqxx -lpq
 
 DEPS		= ${OBJS:%.o=%.d}
 
@@ -24,7 +24,6 @@ RM			= rm -rf
 FILES_PATH	= ./files
 
 all: ${NAME}
-	./${NAME}
 
 ${NAME}: ${OBJS}
 	${CXX} ${CXXFLAGS} ${INCLUDES} ${OBJS} ${LDLIBS} -o ${NAME}

@@ -1,0 +1,9 @@
+.vscode
+objs
+server
+.env
+files
+test.cpp
+.gitignore
+README.md
+.clang-format
