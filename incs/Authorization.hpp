@@ -1,13 +1,14 @@
 #ifndef AUTHORIZATION_HPP
 #define AUTHORIZATION_HPP
 
+#include <crow.h>
+
 #include <iostream>
 #include <pqxx/pqxx>
 #include <string>
 
 #include "ApiRequests.hpp"  // REMOVE WHEN ADD getenv
 #include "HashPasswordToken.hpp"
-#include <crow.h>
 
 struct Authorization : crow::ILocalMiddleware
 {

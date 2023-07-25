@@ -1,9 +1,10 @@
+#include <crow.h>
+
 #include <string>
 
 #include "ApiRequests.hpp"
 #include "Authorization.hpp"
 #include "ContentType.hpp"
-#include <crow.h>
 
 int main()
 {

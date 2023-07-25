@@ -1,9 +1,9 @@
 #ifndef CONTENTTYPE_HPP
 #define CONTENTTYPE_HPP
 
-#include <iostream>
-
 #include <crow.h>
+
+#include <iostream>
 
 struct ContentTypeJson : crow::ILocalMiddleware
 {

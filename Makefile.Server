@@ -38,21 +38,21 @@ ${OBJS_PATH}:
 ${FILES_PATH}:
 	mkdir -p ${FILES_PATH}
 
-clean:
+s_clean:
 	${RM} ${SRCS_PATH} ${INC_PATH}
 
 clean_sources:
 	${RM} ${SRCS}
 
-fclean: clean
+s_fclean: clean
 	${RM} ${NAME}
 
-re: fclean all
+s_re: fclean all
 
 delete_files:
 	${RM} ${FILES_PATH}
 
 format:
-	clang-format -i ${SRCS_PATH}/* ${INC_DIR}/*
+	clang-format -i ${SRCS_PATH}/* ${INC_PATH}/*
 
-.PHONY: all clean fclean re delete_files format
+.PHONY: all s_clean s_fclean s_re delete_files format

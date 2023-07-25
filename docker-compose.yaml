@@ -22,6 +22,8 @@ services:
   server:
     container_name: server
     build: ./
+    volumes:
+      - ./files/:/server/files/
     env_file:
       - .env
     ports:

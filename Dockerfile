@@ -31,9 +31,9 @@ WORKDIR /server
 
 COPY incs incs
 COPY srcs srcs
-COPY MakefileServer/Makefile Makefile
+COPY Makefile.Server Makefile
 
 RUN make -j$(nproc) && \
-    make clean
+    make s_clean
 
 ENTRYPOINT ["./server"]

@@ -114,8 +114,8 @@ crow::response filesUpload(const crow::request &req)
         pqxx::work w(c);
 
         c.prepare("find_user_id", "SELECT user_id FROM server.users WHERE hash_token = $1");
-        pqxx::row r         = w.exec_prepared1("find_user_id", generateHash(user_token));
-        std::string user_id = std::to_string(r[0].as<int>());
+        pqxx::row r = w.exec_prepared1("find_user_id", generateHash(user_token));
+        int user_id = r[0].as<int>();
 
         c.prepare("check", "SELECT file_id FROM server.files_info WHERE is_deleted = false AND name = $1 AND user_id = $2");
         c.prepare("find_file_id",
@@ -144,7 +144,7 @@ crow::response filesUpload(const crow::request &req)
             try
             {
                 w.exec_prepared0("check", params_it->second, user_id);
-                const std::string outfile_name = std::string("./files/") + params_it->second;
+                const std::string outfile_name = std::string("./files/") + std::to_string(user_id) + "_" + params_it->second;
 
                 std::ofstream out_file(outfile_name);
                 if (!out_file)
@@ -195,14 +195,22 @@ crow::response filesList(const crow::request &req)
         c.prepare("find_files", "SELECT * FROM server.files_info WHERE is_deleted = false AND user_id = $1");
         pqxx::result res = w.exec_prepared("find_files", r[0].as<int>());
 
-        crow::json::wvalue json;
+        std::string str_json("[");
         for (int i = 0; i < res.size(); ++i)
         {
-            json[std::string("InputFile_") + std::to_string(i)] = {
-                {"file_id", res[i][0].as<int>()},
-                {"name",    res[i][1].c_str()  }
-            };
+            crow::json::wvalue json_object;
+            json_object["file_id"] = res[i][0].as<int>();
+            std::string temp_str(res[i][1].as<std::string>());
+            temp_str.substr(temp_str.find('_') + 1);
+            json_object["name"]  = temp_str.c_str();
+            crow::json::wvalue j = {json_object};
+            str_json += j.dump() + ",";
         }
+        if (str_json.size() > 1)  // else JSON is empty
+            str_json.pop_back();
+        str_json.push_back(']');
+
+        crow::json::wvalue json = crow::json::load(str_json);
         return crow::response(json);
     }
     catch (const std::exception &e)
@@ -235,7 +243,7 @@ crow::response filesDelete(int file_id)
     }
     catch (const pqxx::unexpected_rows &e)
     {
-        CROW_LOG_DEBUG << "File doesn't exists";
+        CROW_LOG_DEBUG << "File doesn't exists or already deleted";
         return crow::response(crow::status::BAD_REQUEST);
     }
     catch (const std::exception &e)
