@@ -4,3 +4,4 @@ server
 .env
 files
 test.cpp
+postgres-data

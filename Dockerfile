@@ -12,7 +12,8 @@ RUN apt-get update && \
         git \
         libboost-dev \
         python3 \
-        libcrypto++-dev && \
+        libcrypto++-dev \
+        wget && \
         git clone https://github.com/jtv/libpqxx.git && \
         cd libpqxx && \
         git checkout 7.7.5 && \
@@ -21,14 +22,16 @@ RUN apt-get update && \
         make install && \
         cd ../ && \
         rm -rf libpqxx && \
+        wget https://github.com/CrowCpp/Crow/releases/download/v1.0%2B5/crow-v1.0+5.deb && \
+        dpkg -i crow-v1.0+5.deb && \
+        rm crow-v1.0+5.deb && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /server
 
-COPY crow crow
 COPY incs incs
 COPY srcs srcs
-COPY Makefile Makefile
+COPY MakefileServer/Makefile Makefile
 
 RUN make -j$(nproc) && \
     make clean

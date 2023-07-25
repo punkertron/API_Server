@@ -7,7 +7,7 @@
 
 #include "ApiRequests.hpp"  // REMOVE WHEN ADD getenv
 #include "HashPasswordToken.hpp"
-#include "crow_all.h"
+#include <crow.h>
 
 struct Authorization : crow::ILocalMiddleware
 {
@@ -30,7 +30,7 @@ struct Authorization : crow::ILocalMiddleware
         std::string input_hash_token(generateHash(auth.substr(7)));
 
         env e;
-        pqxx::connection c(e.conn_string);
+        pqxx::connection c(e.getConnStr());
         pqxx::work w(c);
 
         c.prepare("find", "SELECT hash_token FROM server.users WHERE hash_token = $1");

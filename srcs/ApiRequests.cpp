@@ -13,7 +13,7 @@ crow::response signUp(const crow::json::rvalue &json)
         std::string password(json["password"].s());
 
         env e;
-        pqxx::connection c(e.conn_string);
+        pqxx::connection c(e.getConnStr());
         pqxx::work w(c);
 
         c.prepare("find", "SELECT username FROM server.users WHERE username = $1");
@@ -64,7 +64,7 @@ crow::response signIn(const crow::json::rvalue &json)
         std::string password(json["password"].s());
 
         env e;
-        pqxx::connection c(e.conn_string);
+        pqxx::connection c(e.getConnStr());
         pqxx::work w(c);
 
         c.prepare("find_pass", "SELECT hash_pass FROM server.users WHERE username = $1");
@@ -110,7 +110,7 @@ crow::response filesUpload(const crow::request &req)
             return crow::response(crow::status::BAD_REQUEST);
 
         env e;
-        pqxx::connection c(e.conn_string);
+        pqxx::connection c(e.getConnStr());
         pqxx::work w(c);
 
         c.prepare("find_user_id", "SELECT user_id FROM server.users WHERE hash_token = $1");
@@ -186,7 +186,7 @@ crow::response filesList(const crow::request &req)
     try
     {
         env e;
-        pqxx::connection c(e.conn_string);
+        pqxx::connection c(e.getConnStr());
         pqxx::work w(c);
 
         c.prepare("find_user_id", "SELECT user_id FROM server.users WHERE hash_token = $1");
@@ -217,7 +217,7 @@ crow::response filesDelete(int file_id)
     try
     {
         env e;
-        pqxx::connection c(e.conn_string);
+        pqxx::connection c(e.getConnStr());
         pqxx::work w(c);
 
         c.prepare("find_file_id", "SELECT is_deleted FROM server.files_info WHERE file_id = $1");
@@ -251,7 +251,7 @@ void filesDownload(crow::response &res, int file_id)
     try
     {
         env e;
-        pqxx::connection c(e.conn_string);
+        pqxx::connection c(e.getConnStr());
         pqxx::work w(c);
         pqxx::row r = w.exec1(std::string("SELECT name FROM server.files_info WHERE is_deleted = false AND file_id = ") +
                               std::to_string(file_id));

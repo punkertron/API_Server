@@ -4,6 +4,9 @@ server
 .env
 files
 test.cpp
+.git
 .gitignore
 README.md
 .clang-format
+Makefile
+.postgres_data

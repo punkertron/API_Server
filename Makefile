@@ -1,56 +1,21 @@
-NAME		= server
+DC		= docker-compose
+PS_PATH	= postgres-data
 
-SRCS_PATH	= ./srcs
-SRCS_FILES	= main.cpp HashPasswordToken.cpp ApiRequests.cpp
+compose-up: | ${PS_PATH}
+	sudo chown -R $$USER ${PS_PATH}
+	${DC} up --build
 
-OBJS_PATH	= ./objs
-OBJS_FILES	= ${SRCS_FILES:.cpp=.o}
-OBJS		= ${addprefix ${OBJS_PATH}/, ${OBJS_FILES}}
+${PS_PATH}:
+	mkdir -p ${PS_PATH}
 
-INC_DIR		= ./incs
-INC			= ${INC_DIR} ./crow
-INCLUDES	= ${INC:%=-I %}
-
-LDLIBS		=  -pthread -lcryptopp -lpqxx -lpq
-
-DEPS		= ${OBJS:%.o=%.d}
-
-CXX			= g++
-CXXFLAGS	= -std=c++17 -Wall -Wextra -O2
-
-RM			= rm -rf
-
-# Where we store files
-FILES_PATH	= ./files
-
-all: ${NAME}
-
-${NAME}: ${OBJS}
-	${CXX} ${CXXFLAGS} ${INCLUDES} ${OBJS} ${LDLIBS} -o ${NAME}
-
-${OBJS_PATH}/%.o : ${SRCS_PATH}/%.cpp | ${OBJS_PATH} ${FILES_PATH}
-	${CXX} ${CXXFLAGS} ${INCLUDES} -MMD -MP -c $< -o $@
-
--include ${DEPS}
-
-${OBJS_PATH}:
-	mkdir -p ${OBJS_PATH}
-
-${FILES_PATH}:
-	mkdir -p ${FILES_PATH}
+stop:
+	${DC} stop
 
 clean:
-	${RM} ${OBJS_PATH}
+	docker stop $$(docker ps -a -q) 2>/dev/null || true
+	docker system prune --volumes -a -f 2>/dev/null
 
 fclean: clean
-	${RM} ${NAME}
+	sudo rm -rf ${PS_PATH}
 
-re: fclean all
-
-delete_files:
-	${RM} ${FILES_PATH}
-
-format:
-	clang-format -i ${SRCS_PATH}/* ${INC_DIR}/*
-
-.PHONY: all clean fclean re delete_files format
+re: fclean compose-up

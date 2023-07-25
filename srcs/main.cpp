@@ -1,22 +1,14 @@
-#include <fstream>
-#include <iostream>
 #include <string>
 
 #include "ApiRequests.hpp"
 #include "Authorization.hpp"
 #include "ContentType.hpp"
-#include "crow_all.h"
+#include <crow.h>
 
 int main()
 {
     crow::App<ContentTypeJson, ContentTypeMultipart, Authorization> app;
     app.loglevel(crow::LogLevel::INFO);  // default
-
-    CROW_ROUTE(app, "/").CROW_MIDDLEWARES(app, ContentTypeJson, Authorization)(
-        []()
-        {
-            return "Hello world\n";
-        });
 
     CROW_ROUTE(app, "/auth/sign-up")
         .CROW_MIDDLEWARES(app, ContentTypeJson)(
@@ -70,5 +62,5 @@ int main()
                 return;
             });
 
-    app.port(18080).multithreaded().run();
+    app.port(std::stoi(getenv("SERVER_PORT"))).multithreaded().run();
 }

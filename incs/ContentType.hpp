@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#include "crow_all.h"
+#include <crow.h>
 
 struct ContentTypeJson : crow::ILocalMiddleware
 {
