@@ -9,4 +9,4 @@ test.cpp
 README.md
 .clang-format
 Makefile
-.postgres_data
+postgres_data
