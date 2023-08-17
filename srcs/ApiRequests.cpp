@@ -261,9 +261,9 @@ void filesDownload(crow::response &res, int file_id)
         env e;
         pqxx::connection c(e.getConnStr());
         pqxx::work w(c);
-        pqxx::row r = w.exec1(std::string("SELECT name FROM server.files_info WHERE is_deleted = false AND file_id = ") +
+        pqxx::row r = w.exec1(std::string("SELECT user_id, name FROM server.files_info WHERE is_deleted = false AND file_id = ") +
                               std::to_string(file_id));
-        std::string file_name(std::string("./files/") + r[0].c_str());
+        std::string file_name(std::string("./files/") + std::to_string(r[0].as<int>()) + "_" + r[1].c_str());
 
         std::ifstream file(file_name, std::ios::binary);
         if (file.is_open())

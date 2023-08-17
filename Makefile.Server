@@ -20,14 +20,14 @@ CXXFLAGS	= -std=c++17 -Wall -Wextra -O2
 RM			= rm -rf
 
 # Where we store files
-FILES_PATH	= ./files
+S_FILES_PATH	= ./files
 
 all: ${NAME}
 
 ${NAME}: ${OBJS}
 	${CXX} ${CXXFLAGS} ${INCLUDES} ${OBJS} ${LDLIBS} -o ${NAME}
 
-${OBJS_PATH}/%.o : ${SRCS_PATH}/%.cpp | ${OBJS_PATH} ${FILES_PATH}
+${OBJS_PATH}/%.o : ${SRCS_PATH}/%.cpp | ${OBJS_PATH} ${S_FILES_PATH}
 	${CXX} ${CXXFLAGS} ${INCLUDES} -MMD -MP -c $< -o $@
 
 -include ${DEPS}
@@ -35,8 +35,8 @@ ${OBJS_PATH}/%.o : ${SRCS_PATH}/%.cpp | ${OBJS_PATH} ${FILES_PATH}
 ${OBJS_PATH}:
 	mkdir -p ${OBJS_PATH}
 
-${FILES_PATH}:
-	mkdir -p ${FILES_PATH}
+${S_FILES_PATH}:
+	mkdir -p ${S_FILES_PATH}
 
 s_clean:
 	${RM} ${SRCS_PATH} ${INC_PATH}
@@ -50,7 +50,7 @@ s_fclean: clean
 s_re: fclean all
 
 delete_files:
-	${RM} ${FILES_PATH}
+	${RM} ${S_FILES_PATH}
 
 format:
 	clang-format -i ${SRCS_PATH}/* ${INC_PATH}/*
