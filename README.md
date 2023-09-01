@@ -108,7 +108,7 @@ curl --request GET 'http://localhost:18081/api/v1/files' \
 --header 'Authorization: Bearer medb9Cfhx.UIBEqaXh7ji2AD0adE9dLjhOkeeqmBp69QyoQjvLsDBS6pT9TQasZi' \
 --header 'Content-Type: application/json' \
 --data-raw '{
-    "file_id": 6
+    "file_id": 1
 }'
 ```
 Example response:
