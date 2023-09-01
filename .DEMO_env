@@ -1,0 +1,4 @@
+POSTGRES_DB=server
+POSTGRES_USER=server_account
+POSTGRES_PASSWORD=server_password
+SERVER_PORT=18081

@@ -26,7 +26,7 @@ crow::response signIn(const crow::json::rvalue& json);
 
 crow::response filesUpload(const crow::request& req);
 crow::response filesList(const crow::request& req);
-crow::response filesDelete(int file_id);
-void filesDownload(crow::response& res, int file_id);
+crow::response filesDelete(const crow::json::rvalue& json);
+crow::response filesDownload(const crow::json::rvalue& json);
 
 #endif  // APIREQUESTS_HPP

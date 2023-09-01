@@ -12,6 +12,7 @@ int main()
     app.loglevel(crow::LogLevel::INFO);  // default
 
     CROW_ROUTE(app, "/auth/sign-up")
+        .methods(crow::HTTPMethod::POST)
         .CROW_MIDDLEWARES(app, ContentTypeJson)(
             [](const crow::request& req)
             {
@@ -22,6 +23,7 @@ int main()
             });
 
     CROW_ROUTE(app, "/auth/sign-in")
+        .methods(crow::HTTPMethod::POST)
         .CROW_MIDDLEWARES(app, ContentTypeJson)(
             [](const crow::request& req)
             {
@@ -31,7 +33,7 @@ int main()
                 return signIn(json);
             });
 
-    CROW_ROUTE(app, "/api/v1/files/upload")
+    CROW_ROUTE(app, "/api/v1/files")
         .methods(crow::HTTPMethod::POST)
         .CROW_MIDDLEWARES(app, /*ContentTypeMultipart,*/ Authorization)(
             [](const crow::request& req)
@@ -46,21 +48,26 @@ int main()
                 return filesList(req);
             });
 
-    CROW_ROUTE(app, "/api/v1/files/delete/<int>")
+    CROW_ROUTE(app, "/api/v1/files")
         .methods(crow::HTTPMethod::DELETE)
-        .CROW_MIDDLEWARES(app, Authorization)(
-            [](int file_id)
+        .CROW_MIDDLEWARES(app, Authorization, ContentTypeJson)(
+            [](const crow::request& req)
             {
-                return filesDelete(file_id);
+                crow::json::rvalue json = crow::json::load(req.body);
+                if (!json)
+                    return crow::response(crow::status::BAD_REQUEST);
+                return filesDelete(json);
             });
 
-    CROW_ROUTE(app, "/api/v1/files/download/<int>")
+    CROW_ROUTE(app, "/api/v1/files")
         .methods(crow::HTTPMethod::GET)
         .CROW_MIDDLEWARES(app, Authorization)(
-            [](crow::response& res, int file_id)
+            [](const crow::request& req)
             {
-                filesDownload(res, file_id);
-                return;
+                crow::json::rvalue json = crow::json::load(req.body);
+                if (!json)
+                    return crow::response(crow::status::BAD_REQUEST);
+                return filesDownload(json);
             });
 
     app.port(std::stoi(getenv("SERVER_PORT"))).multithreaded().run();

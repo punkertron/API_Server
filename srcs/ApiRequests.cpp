@@ -220,10 +220,12 @@ crow::response filesList(const crow::request &req)
     }
 }
 
-crow::response filesDelete(int file_id)
+crow::response filesDelete(const crow::json::rvalue &json)
 {
     try
     {
+        int file_id = json["file_id"].i();
+
         env e;
         pqxx::connection c(e.getConnStr());
         pqxx::work w(c);
@@ -254,15 +256,19 @@ crow::response filesDelete(int file_id)
     return crow::response(crow::status::OK);
 }
 
-void filesDownload(crow::response &res, int file_id)
+crow::response filesDownload(const crow::json::rvalue &json)
 {
+    crow::response res;
     try
     {
+        int file_id = json["file_id"].i();
+
         env e;
         pqxx::connection c(e.getConnStr());
         pqxx::work w(c);
-        pqxx::row r = w.exec1(std::string("SELECT user_id, name FROM server.files_info WHERE is_deleted = false AND file_id = ") +
-                              std::to_string(file_id));
+        pqxx::row r =
+            w.exec1(std::string("SELECT user_id, name FROM server.files_info WHERE is_deleted = false AND file_id = ") +
+                    std::to_string(file_id));
         std::string file_name(std::string("./files/") + std::to_string(r[0].as<int>()) + "_" + r[1].c_str());
 
         std::ifstream file(file_name, std::ios::binary);
@@ -289,5 +295,5 @@ void filesDownload(crow::response &res, int file_id)
         CROW_LOG_ERROR << e.what();
         res.code = crow::status::INTERNAL_SERVER_ERROR;
     }
-    res.end();
+    return res;
 }
