@@ -92,7 +92,7 @@ Example response:
 curl --request GET 'http://localhost:18081/api/v1/files/list' \
 --header 'Authorization: Bearer medb9Cfhx.UIBEqaXh7ji2AD0adE9dLjhOkeeqmBp69QyoQjvLsDBS6pT9TQasZi'
 ```
-
+Example response:
 ```json
 [
   {
