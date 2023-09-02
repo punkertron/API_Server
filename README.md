@@ -73,7 +73,7 @@ First, let's create a file:
 echo "Test text" > test.txt
 ```
 
-Then, let's send the file to the server
+Then, let's send the file to the server:
 ```curl
 curl --request POST 'http://localhost:18081/api/v1/files' \
 --header 'Authorization: Bearer medb9Cfhx.UIBEqaXh7ji2AD0adE9dLjhOkeeqmBp69QyoQjvLsDBS6pT9TQasZi' \
